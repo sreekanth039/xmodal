@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const XModal = () => {
   const [open, setOpen] = useState(false);
@@ -8,13 +8,24 @@ const XModal = () => {
   const [phone, setPhone] = useState("");
   const [dob, setDob] = useState("");
 
-  const resetAndClose = () => {
-    setUsername("");
-    setEmail("");
-    setPhone("");
-    setDob("");
-    setOpen(false);
-  };
+  const modalContentRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleDocMouseDown = (e) => {
+      // if click is outside modal-content => close
+      if (
+        modalContentRef.current &&
+        !modalContentRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleDocMouseDown);
+    return () => document.removeEventListener("mousedown", handleDocMouseDown);
+  }, [open]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -24,19 +35,16 @@ const XModal = () => {
     const ph = phone.trim();
     const d = dob.trim();
 
-    // ✅ 1) If user provided email, validate it first (even if other fields empty)
     if (em && !em.includes("@")) {
       alert("Invalid email. Please check your email address.");
       return;
     }
 
-    // ✅ 2) If user provided phone, validate it first
     if (ph && !/^\d{10}$/.test(ph)) {
       alert("Invalid phone number. Please enter a 10-digit phone number.");
       return;
     }
 
-    // ✅ 3) If user provided dob, validate it first
     if (d) {
       const selected = new Date(d);
       const today = new Date();
@@ -49,7 +57,6 @@ const XModal = () => {
       }
     }
 
-    // ✅ 4) Now required-field checks (only after format checks)
     if (!u) {
       alert("Please fill out the Username field.");
       return;
@@ -67,25 +74,22 @@ const XModal = () => {
       return;
     }
 
-    // ✅ success
-    resetAndClose();
+    // success => back to initial render
+    setUsername("");
+    setEmail("");
+    setPhone("");
+    setDob("");
+    setOpen(false);
   };
 
   return (
     <div>
       <h1>User Details Modal</h1>
-
       <button onClick={() => setOpen(true)}>Open Form</button>
 
       {open && (
-        <div
-          className="modal"
-          onClick={(e) => {
-            // ✅ closes only when clicking on the overlay (outside modal-content)
-            if (e.target === e.currentTarget) setOpen(false);
-          }}
-        >
-          <div className="modal-content">
+        <div className="modal">
+          <div className="modal-content" ref={modalContentRef}>
             <form onSubmit={handleSubmit}>
               <div>
                 <label htmlFor="username">Username:</label>
